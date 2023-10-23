@@ -1,0 +1,8 @@
+apiVersion: microservice.microservice.example.com/v1beta1
+kind: Deployment
+metadata:
+  name: deployment-sample
+spec:
+  ingress:
+    - containerPort: 80
+      type: HTTPS

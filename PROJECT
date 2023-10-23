@@ -1,0 +1,16 @@
+domain: microservice.example.com
+layout:
+- go.kubebuilder.io/v3
+projectName: microservice-operator
+repo: microservice.example.com/microservice
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: microservice.example.com
+  group: microservice
+  kind: Deployment
+  path: microservice.example.com/microservice/api/v1beta1
+  version: v1beta1
+version: "3"
