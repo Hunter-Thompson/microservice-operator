@@ -43,6 +43,7 @@ type Ingress struct {
 	Type Type `json:"type"`
 	// +optional
 	Paths         []string `json:"paths"`
+	Name          string   `json:"name"`
 	ContainerPort int32    `json:"containerPort"`
 }
 

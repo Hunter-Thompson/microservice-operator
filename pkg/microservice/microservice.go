@@ -1,12 +1,14 @@
 package microservice
 
 import (
+	"fmt"
+
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	networking "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/kubernetes/pkg/apis/networking"
 )
 
 func DeploymentOwnerReference(deployment *microservicev1beta1.Deployment) []metav1.OwnerReference {
@@ -23,17 +25,18 @@ func GenerateIngressesV1(deployment *microservicev1beta1.Deployment) []*networki
 	ingresses := []*networking.Ingress{}
 
 	for _, ing := range deployment.Spec.Ingress {
-		ingress := newNetworkingV1Ingress(deployment)
+		name := fmt.Sprintf("%s-%s", deployment.Name, ing.Name)
+		ingress := newNetworkingV1Ingress(deployment, name)
 		ingresses = append(ingresses, configureIngress(deployment, &ing, ingress))
 	}
 
 	return ingresses
 }
 
-func newNetworkingV1Ingress(deployment *microservicev1beta1.Deployment) *networking.Ingress {
+func newNetworkingV1Ingress(deployment *microservicev1beta1.Deployment, name string) *networking.Ingress {
 	return &networking.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            deployment.Name,
+			Name:            name,
 			Namespace:       deployment.Namespace,
 			OwnerReferences: DeploymentOwnerReference(deployment),
 		},
@@ -113,6 +116,7 @@ func configureService(deployment *microservicev1beta1.Deployment, service *corev
 			Port:       ingress.ContainerPort,
 			TargetPort: intstr.FromInt(int(ingress.ContainerPort)),
 			Protocol:   corev1.ProtocolTCP,
+			Name:       ingress.Name,
 		})
 	}
 

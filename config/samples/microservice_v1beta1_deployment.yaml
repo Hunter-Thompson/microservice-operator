@@ -6,3 +6,25 @@ spec:
   ingress:
     - containerPort: 80
       type: HTTPS
+      host: asd.adsa.ksjfg
+      paths:
+        - /dsa
+        - /as
+        - /fds
+      name: test3
+    - containerPort: 443
+      type: HTTPS
+      host: asd.adsa.ksjfg
+      paths:
+        - /dsagkfd
+        - /asopgkdf
+        - /fdslkgfgkglkf
+      name: test2
+    - containerPort: 3945
+      type: HTTPS
+      host: asd.adsa.ksjfg
+      paths:
+        - /dsaa
+        - /asfds
+        - /fdsasd
+      name: test1

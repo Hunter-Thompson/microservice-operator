@@ -91,6 +91,12 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, err
 	}
 
+	err = r.checkIngress(deployment, status, reqLogger)
+	if err != nil {
+		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
+		return reconcile.Result{}, err
+	}
+
 	status.State = microservicev1beta1.Stable
 	err = r.updateStatus(deployment, status, reqLogger)
 	if err != nil {

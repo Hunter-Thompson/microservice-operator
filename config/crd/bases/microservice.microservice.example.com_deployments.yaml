@@ -48,6 +48,8 @@ spec:
                       type: string
                     internetFacing:
                       type: boolean
+                    name:
+                      type: string
                     paths:
                       items:
                         type: string
@@ -56,6 +58,7 @@ spec:
                       type: string
                   required:
                   - containerPort
+                  - name
                   type: object
                 type: array
             type: object
