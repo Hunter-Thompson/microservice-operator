@@ -89,8 +89,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = controllers.NewDeploymentReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
+	if err = controllers.NewMicroserviceReconciler(mgr).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Microservice")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

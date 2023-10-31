@@ -10,7 +10,7 @@ resources:
   controller: true
   domain: microservice.example.com
   group: microservice
-  kind: Deployment
+  kind: Microservice
   path: microservice.example.com/microservice/api/v1beta1
   version: v1beta1
 version: "3"

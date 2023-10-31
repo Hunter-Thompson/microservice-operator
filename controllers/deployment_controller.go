@@ -18,11 +18,14 @@ package controllers
 
 import (
 	"context"
+	"os"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
@@ -31,15 +34,17 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// DeploymentReconciler reconciles a Deployment object
-type DeploymentReconciler struct {
+const resourcesReadyDelay = 10 * time.Second
+
+// MicroserviceReconciler reconciles a Microservice object
+type MicroserviceReconciler struct {
 	client.Client
 	Scheme    *runtime.Scheme
 	Resources *resources.ResourceHelper
 }
 
-func NewDeploymentReconciler(mgr ctrl.Manager) *DeploymentReconciler {
-	return &DeploymentReconciler{
+func NewMicroserviceReconciler(mgr ctrl.Manager) *MicroserviceReconciler {
+	return &MicroserviceReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
 		Resources: resources.NewResourceHelper(mgr.GetClient(), mgr.GetScheme()),
@@ -53,18 +58,16 @@ func NewDeploymentReconciler(mgr ctrl.Manager) *DeploymentReconciler {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Deployment object against the actual cluster state, and then
+// the Microservice object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.2/pkg/reconcile
-func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *MicroserviceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	reqLogger := log.FromContext(ctx)
-	// TODO(user): your logic here
 
-	// Fetch the Mattermost.
-	deployment := &microservicev1beta1.Deployment{}
+	deployment := &microservicev1beta1.Microservice{}
 	err := r.Client.Get(ctx, req.NamespacedName, deployment)
 	if err != nil && k8sErrors.IsNotFound(err) {
 		// Request object not found, could have been deleted after reconcile
@@ -77,16 +80,22 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// We copy status to not to refetch the resource
 	status := deployment.Status
 
-	// Set a new Mattermost's state to reconciling.
-	if len(deployment.Status.State) == 0 {
+	if status.State != microservicev1beta1.Reconciling {
 		err = r.updateStatusReconciling(deployment, status, reqLogger)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
+	err = r.checkDeployment(deployment, status, reqLogger)
+	if err != nil {
+		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
+		return reconcile.Result{}, err
+	}
+
 	err = r.checkService(deployment, status, reqLogger)
 	if err != nil {
+		os.Exit(1)
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
@@ -108,8 +117,10 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *MicroserviceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	pred := predicate.GenerationChangedPredicate{}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&microservicev1beta1.Deployment{}).
+		For(&microservicev1beta1.Microservice{}).
+		WithEventFilter(pred).
 		Complete(r)
 }

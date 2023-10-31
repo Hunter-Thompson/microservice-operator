@@ -5,6 +5,7 @@ import (
 
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
 	"github.com/Hunter-Thompson/microservice-operator/pkg/microservice"
+	"github.com/Hunter-Thompson/microservice-operator/pkg/resources"
 	"github.com/go-logr/logr"
 	networking "k8s.io/api/networking/v1"
 
@@ -12,31 +13,24 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (r *DeploymentReconciler) checkIngress(deployment *microservicev1beta1.Deployment, status microservicev1beta1.DeploymentStatus, reqLogger logr.Logger) error {
-	desired := microservice.GenerateIngressesV1(deployment)
+func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
+	desired := microservice.GenerateIngressV1(deployment)
 
-	for _, ingress := range desired {
-		err := r.Resources.CreateIngressIfNotExists(deployment, ingress, reqLogger)
-		if err != nil {
-			return err
-		}
-
-		current := &networking.Ingress{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: ingress.Name, Namespace: ingress.Namespace}, current)
-		if err != nil {
-			return err
-		}
-
-		err = r.Resources.Update(current, ingress, reqLogger)
-		if err != nil {
-			return err
-		}
+	err := r.Resources.CreateIngressIfNotExists(deployment, desired, reqLogger)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	current := &networking.Ingress{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: desired.Name, Namespace: desired.Namespace}, current)
+	if err != nil {
+		return err
+	}
+
+	return r.Resources.Update(current, desired, reqLogger)
 }
 
-func (r *DeploymentReconciler) checkService(deployment *microservicev1beta1.Deployment, status microservicev1beta1.DeploymentStatus, reqLogger logr.Logger) error {
+func (r *MicroserviceReconciler) checkService(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
 	desired := microservice.GenerateServiceV1(deployment)
 
 	err := r.Resources.CreateServiceIfNotExists(deployment, desired, reqLogger)
@@ -49,6 +43,8 @@ func (r *DeploymentReconciler) checkService(deployment *microservicev1beta1.Depl
 	if err != nil {
 		return err
 	}
+
+	resources.CopyServiceEmptyAutoAssignedFields(desired, current)
 
 	return r.Resources.Update(current, desired, reqLogger)
 }

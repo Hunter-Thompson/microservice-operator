@@ -1,20 +1,24 @@
 apiVersion: microservice.microservice.example.com/v1beta1
-kind: Deployment
+kind: Microservice
 metadata:
   name: deployment-sample
 spec:
+  replicas: 3
+  labels:
+    asd: asda
+  image: sdjg:latesta
   ingress:
-    - containerPort: 80
+    - containerPort: 8090
       type: HTTPS
-      host: asd.adsa.ksjfg
+      host: asd.dsa.asd
       paths:
-        - /dsa
+        - /dsaa
         - /as
         - /fds
       name: test3
     - containerPort: 443
       type: HTTPS
-      host: asd.adsa.ksjfg
+      host: fff.flkgklh.eirt
       paths:
         - /dsagkfd
         - /asopgkdf
@@ -22,7 +26,7 @@ spec:
       name: test2
     - containerPort: 3945
       type: HTTPS
-      host: asd.adsa.ksjfg
+      host: nmmm.mmm.mmm
       paths:
         - /dsaa
         - /asfds

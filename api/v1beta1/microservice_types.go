@@ -18,18 +18,31 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// DeploymentSpec defines the desired state of Deployment
-type DeploymentSpec struct {
+// MicroserviceSpec defines the desired state of Microservice
+type MicroserviceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +optional
 	Ingress []Ingress `json:"ingress,omitempty"`
+	// +optional
+	Env   map[string]string `json:"env,omitempty"`
+	Image string            `json:"image"`
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	Replicas    int32               `json:"replicas"`
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Labels    map[string]string           `json:"labels"`
 }
 
 type Ingress struct {
@@ -42,7 +55,7 @@ type Ingress struct {
 	// +optional
 	Type Type `json:"type"`
 	// +optional
-	Paths         []string `json:"paths"`
+	Paths         []string `json:"paths,omitempty"`
 	Name          string   `json:"name"`
 	ContainerPort int32    `json:"containerPort"`
 }
@@ -57,8 +70,8 @@ const (
 	WEBSOCKET Type = "WEBSOCKET"
 )
 
-// DeploymentStatus defines the observed state of Deployment
-type DeploymentStatus struct {
+// MicroserviceStatus defines the observed state of Microservice
+type MicroserviceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -90,23 +103,42 @@ const (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-type Deployment struct {
+type Microservice struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DeploymentSpec   `json:"spec,omitempty"`
-	Status DeploymentStatus `json:"status,omitempty"`
+	Spec   MicroserviceSpec   `json:"spec,omitempty"`
+	Status MicroserviceStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// DeploymentList contains a list of Deployment
-type DeploymentList struct {
+// MicroserviceList contains a list of Microservice
+type MicroserviceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Deployment `json:"items"`
+	Items           []Microservice `json:"items"`
 }
 
+//func (d *Microservice) SetDefaults() error {
+//	if d.Spec.Replicas == nil {
+//		return fmt.Errorf("spec.replicas is required")
+//	}
+//
+//	if d.Spec.Image == nil {
+//		return fmt.Errorf("spec.image is required")
+//	}
+//
+//	for _, ingress := range d.Spec.Ingress {
+//		if ingress.ContainerPort == nil {
+//
+//		}
+//
+//	}
+//
+//	return nil
+//}
+
 func init() {
-	SchemeBuilder.Register(&Deployment{}, &DeploymentList{})
+	SchemeBuilder.Register(&Microservice{}, &MicroserviceList{})
 }
