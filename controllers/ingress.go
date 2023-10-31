@@ -31,6 +31,10 @@ func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Mi
 }
 
 func (r *MicroserviceReconciler) checkService(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
+	if len(deployment.Spec.Ingress) < 1 {
+		return nil
+	}
+
 	desired := microservice.GenerateServiceV1(deployment)
 
 	err := r.Resources.CreateServiceIfNotExists(deployment, desired, reqLogger)
