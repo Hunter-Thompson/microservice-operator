@@ -67,11 +67,19 @@ spec:
                   - name
                   type: object
                 type: array
+              ingressAnnotations:
+                additionalProperties:
+                  type: string
+                type: object
               labels:
                 additionalProperties:
                   type: string
                 type: object
               nodeSelector:
+                additionalProperties:
+                  type: string
+                type: object
+              podAnnotations:
                 additionalProperties:
                   type: string
                 type: object

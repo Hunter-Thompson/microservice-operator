@@ -33,6 +33,10 @@ type MicroserviceSpec struct {
 	// +optional
 	Ingress []Ingress `json:"ingress,omitempty"`
 	// +optional
+	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
+	// +optional
+	PodAnnotations map[string]string `json:"podAnnotations,omitempty"`
+	// +optional
 	Env   map[string]string `json:"env,omitempty"`
 	Image string            `json:"image"`
 	// +optional

@@ -7,6 +7,10 @@ spec:
   labels:
     asd: asda
   image: sdjg:latesta
+  ingressAnnotations:
+    ing: "anno"
+  podAnnotations:
+    pod: "anno"
   ingress:
     - containerPort: 8090
       type: HTTPS

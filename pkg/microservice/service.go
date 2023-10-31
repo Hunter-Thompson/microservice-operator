@@ -20,6 +20,7 @@ func newServiceV1Beta(deployment *microservicev1beta1.Microservice) *corev1.Serv
 			Namespace:       deployment.Namespace,
 			OwnerReferences: DeploymentOwnerReference(deployment),
 			Labels:          deployment.Spec.Labels,
+			Annotations:     deployment.GetAnnotations(),
 		},
 	}
 }

@@ -18,13 +18,14 @@ func newNetworkingV1Ingress(deployment *microservicev1beta1.Microservice, name s
 			Namespace:       deployment.Namespace,
 			OwnerReferences: DeploymentOwnerReference(deployment),
 			Labels:          deployment.Spec.Labels,
+			Annotations:     deployment.Spec.IngressAnnotations,
 		},
 	}
 }
 
 func configureIngress(deployment *microservicev1beta1.Microservice, ing []microservicev1beta1.Ingress, ingress *networking.Ingress) *networking.Ingress {
 	for _, v := range ing {
-		ingress = configureIngressRules(deployment, &v, ingress)
+		configureIngressRules(deployment, &v, ingress)
 	}
 
 	return ingress

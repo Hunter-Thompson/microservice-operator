@@ -21,6 +21,7 @@ func newDeployment(deployment *microservicev1beta1.Microservice) *appsv1.Deploym
 			Namespace:       deployment.Namespace,
 			OwnerReferences: DeploymentOwnerReference(deployment),
 			Labels:          deployment.Spec.Labels,
+			Annotations:     deployment.GetAnnotations(),
 		},
 	}
 }
@@ -61,7 +62,8 @@ func configureDeployment(micdeployment *microservicev1beta1.Microservice, deploy
 		},
 		Template: v1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: micdeployment.Spec.Labels,
+				Labels:      micdeployment.Spec.Labels,
+				Annotations: micdeployment.Spec.PodAnnotations,
 			},
 			Spec: v1.PodSpec{
 				Tolerations:  micdeployment.Spec.Tolerations,
