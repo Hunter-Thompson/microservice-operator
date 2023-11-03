@@ -33,8 +33,6 @@ type MicroserviceSpec struct {
 	// +optional
 	Ingress []Ingress `json:"ingress,omitempty"`
 	// +optional
-	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
-	// +optional
 	PodAnnotations map[string]string `json:"podAnnotations,omitempty"`
 	// +optional
 	Env   map[string]string `json:"env,omitempty"`
@@ -47,21 +45,18 @@ type MicroserviceSpec struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	Labels    map[string]string           `json:"labels"`
+	// +optional
+	IngressEnabled bool `json:"ingressEnabled,omitempty"`
 }
 
 type Ingress struct {
 	// +optional
 	Host string `json:"host,omitempty"`
 	// +optional
-	InternetFacing bool `json:"internetFacing,omitempty"`
-	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// +optional
-	Type Type `json:"type"`
-	// +optional
-	Paths         []string `json:"paths,omitempty"`
-	Name          string   `json:"name"`
-	ContainerPort int32    `json:"containerPort"`
+	Annotations   map[string]string `json:"annotations,omitempty"`
+	Paths         []string          `json:"paths"`
+	Name          string            `json:"name"`
+	ContainerPort int32             `json:"containerPort"`
 }
 
 type Type string

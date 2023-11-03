@@ -22,9 +22,15 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+
 	"github.com/stretchr/testify/assert"
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	appsv1 "k8s.io/api/apps/v1"
+	networking "k8s.io/api/networking/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -33,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -95,7 +102,7 @@ func setupTestDeps(t *testing.T) (logr.Logger, *MicroserviceReconciler) {
 	return logger, &r
 }
 
-func TestDeploymentController(t *testing.T) {
+func TestAllChecks(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
@@ -115,6 +122,7 @@ func TestDeploymentController(t *testing.T) {
 	currentStatus := microservicev1beta1.MicroserviceStatus{}
 
 	t.Run("service", func(t *testing.T) {
+		// ---
 		err := r.checkService(ms, currentStatus, logger)
 		assert.NoError(t, err)
 
@@ -123,6 +131,7 @@ func TestDeploymentController(t *testing.T) {
 		assert.Error(t, err)
 		assert.True(t, k8sErrors.IsNotFound(err))
 
+		// ---
 		ms.Spec = microservicev1beta1.MicroserviceSpec{
 			Ingress: []microservicev1beta1.Ingress{
 				{
@@ -131,7 +140,6 @@ func TestDeploymentController(t *testing.T) {
 				},
 			},
 		}
-
 		err = r.checkService(ms, currentStatus, logger)
 		assert.NoError(t, err)
 
@@ -143,6 +151,7 @@ func TestDeploymentController(t *testing.T) {
 		assert.Equal(t, int32(8080), current.Spec.Ports[0].Port)
 		assert.Equal(t, "test-1", current.Spec.Ports[0].Name)
 
+		// ---
 		ms.Spec = microservicev1beta1.MicroserviceSpec{
 			Ingress: []microservicev1beta1.Ingress{
 				{
@@ -161,5 +170,405 @@ func TestDeploymentController(t *testing.T) {
 		assert.EqualValues(t, msNamespace, current.GetNamespace())
 		assert.Equal(t, int32(8090), current.Spec.Ports[0].Port)
 		assert.Equal(t, "test-2", current.Spec.Ports[0].Name)
+
+		// ---
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{}
+		err = r.checkService(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &corev1.Service{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, current)
+		assert.Error(t, err)
+		assert.True(t, k8sErrors.IsNotFound(err))
 	})
+
+	t.Run("ingress", func(t *testing.T) {
+		// ---
+		err := r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current := &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, current)
+		assert.Error(t, err)
+		assert.True(t, k8sErrors.IsNotFound(err))
+
+		// ---
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{
+			{
+				ContainerPort: 8090,
+				Name:          "test-2",
+				Host:          "example.com",
+			},
+		}
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.Error(t, err)
+		assert.True(t, k8sErrors.IsNotFound(err))
+
+		// ---
+		pathType := networking.PathTypeImplementationSpecific
+		ms.Spec.IngressEnabled = true
+
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{
+			{
+				ContainerPort: 8090,
+				Name:          "test-2",
+			},
+		}
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.NoError(t, err)
+		assert.EqualValues(t, []networking.IngressRule{
+			{
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: []networking.HTTPIngressPath{
+							{
+								PathType: &pathType,
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, current.Spec.Rules)
+
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{
+			{
+				ContainerPort: 8090,
+				Name:          "test-2",
+				Host:          "example.com",
+			},
+		}
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.NoError(t, err)
+		assert.EqualValues(t, []networking.IngressRule{
+			{
+				Host: "example.com",
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: []networking.HTTPIngressPath{
+							{
+								PathType: &pathType,
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, current.Spec.Rules)
+
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{
+			{
+				ContainerPort: 8090,
+				Name:          "test-2",
+				Host:          "example.com",
+				Paths: []string{
+					"/asd",
+					"/dsa",
+				},
+			},
+		}
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.NoError(t, err)
+		assert.EqualValues(t, []networking.IngressRule{
+			{
+				Host: "example.com",
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: []networking.HTTPIngressPath{
+							{
+								PathType: &pathType,
+								Path:     "/asd",
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+							{
+								PathType: &pathType,
+								Path:     "/dsa",
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, current.Spec.Rules)
+
+		// ---
+		ms.Spec.IngressEnabled = false
+
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.Error(t, err)
+		assert.True(t, k8sErrors.IsNotFound(err))
+
+		// ---
+		ms.Spec.IngressEnabled = true
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{
+			{
+				ContainerPort: 8090,
+				Name:          "test-2",
+				Host:          "example.com",
+				Paths: []string{
+					"/asd",
+					"/dsa",
+				},
+			},
+		}
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.NoError(t, err)
+		assert.EqualValues(t, []networking.IngressRule{
+			{
+				Host: "example.com",
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: []networking.HTTPIngressPath{
+							{
+								PathType: &pathType,
+								Path:     "/asd",
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+							{
+								PathType: &pathType,
+								Path:     "/dsa",
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, current.Spec.Rules)
+
+		ms.Spec.Ingress = []microservicev1beta1.Ingress{}
+		err = r.checkIngress(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current = &networking.Ingress{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-2", Namespace: msNamespace}, current)
+		assert.Error(t, err)
+		assert.True(t, k8sErrors.IsNotFound(err))
+	})
+
+	t.Run("deployment", func(t *testing.T) {
+		image := "image:latest"
+		labels := map[string]string{
+			"app": "test",
+		}
+		nodeSelector := map[string]string{
+			"app": "test",
+		}
+		replicas := int32(8)
+		env := map[string]string{
+			"test": "env",
+		}
+		tolerations := []v1.Toleration{
+			{
+				Key:    "test",
+				Value:  "toleration",
+				Effect: v1.TaintEffectNoExecute,
+			},
+		}
+		podAnnotations := map[string]string{
+			"test": "env",
+		}
+
+		ingress := []microservicev1beta1.Ingress{
+			{
+				ContainerPort: 8090,
+				Name:          "test-2",
+			},
+		}
+
+		ms.Spec = microservicev1beta1.MicroserviceSpec{
+			Image:          image,
+			Labels:         labels,
+			Replicas:       replicas,
+			Env:            env,
+			NodeSelector:   nodeSelector,
+			Tolerations:    tolerations,
+			PodAnnotations: podAnnotations,
+			Ingress:        ingress,
+		}
+
+		err := r.checkDeployment(ms, currentStatus, logger)
+		assert.NoError(t, err)
+
+		current := &appsv1.Deployment{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, current)
+		assert.NoError(t, err)
+		assert.Equal(t, []v1.Container{
+			{
+				Name:  ms.GetName(),
+				Image: image,
+				Ports: []v1.ContainerPort{
+					{
+						Name:          "test-2",
+						ContainerPort: 8090,
+						Protocol:      v1.ProtocolTCP,
+					},
+				},
+				Env: []v1.EnvVar{
+					{
+						Name:  "test",
+						Value: "env",
+					},
+				},
+				TerminationMessagePath:   "/dev/termination-log",
+				TerminationMessagePolicy: "File",
+				ImagePullPolicy:          v1.PullAlways,
+			},
+		}, current.Spec.Template.Spec.Containers)
+
+		assert.Equal(t, labels, current.Labels)
+		assert.Equal(t, labels, current.Spec.Template.ObjectMeta.Labels)
+		assert.Equal(t, podAnnotations, current.Spec.Template.ObjectMeta.Annotations)
+		assert.Equal(t, nodeSelector, current.Spec.Template.Spec.NodeSelector)
+		assert.Equal(t, tolerations, current.Spec.Template.Spec.Tolerations)
+		assert.Equal(t, &metav1.LabelSelector{
+			MatchLabels: labels,
+		}, current.Spec.Selector)
+		assert.Equal(t, &replicas, current.Spec.Replicas)
+	})
+}
+
+func TestMicroserviceController(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	_, r := setupTestDeps(t)
+
+	msName := "foo"
+	msNamespace := "default"
+	image := "image:latest"
+	labels := map[string]string{
+		"app": "test",
+	}
+	nodeSelector := map[string]string{
+		"app": "test",
+	}
+	replicas := int32(8)
+	env := map[string]string{
+		"test": "env",
+	}
+	tolerations := []v1.Toleration{
+		{
+			Key:    "test",
+			Value:  "toleration",
+			Effect: v1.TaintEffectNoExecute,
+		},
+	}
+	podAnnotations := map[string]string{
+		"test": "env",
+	}
+
+	ms := &microservicev1beta1.Microservice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      msName,
+			Namespace: msNamespace,
+			UID:       types.UID("test"),
+		},
+		Spec: microservicev1beta1.MicroserviceSpec{
+			Image:          image,
+			Labels:         labels,
+			Replicas:       replicas,
+			Env:            env,
+			NodeSelector:   nodeSelector,
+			Tolerations:    tolerations,
+			IngressEnabled: true,
+			PodAnnotations: podAnnotations,
+			Ingress: []microservicev1beta1.Ingress{
+				{
+					Host:          "example.com",
+					Name:          "test-1",
+					ContainerPort: 8090,
+					Paths: []string{
+						"/asd",
+					},
+				},
+			},
+		},
+	}
+
+	err := r.Client.Create(context.TODO(), ms)
+	assert.NoError(t, err)
+
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: msName, Namespace: msNamespace}}
+
+	result, err := r.Reconcile(context.TODO(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, ctrl.Result{}, result)
+
+	svc := &corev1.Service{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, svc)
+	assert.NoError(t, err)
+
+	ing := &networking.Ingress{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName + "-test-1", Namespace: msNamespace}, ing)
+	assert.NoError(t, err)
+
+	deployment := &appsv1.Deployment{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, deployment)
+	assert.NoError(t, err)
 }

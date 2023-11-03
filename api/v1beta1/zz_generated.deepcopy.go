@@ -122,13 +122,6 @@ func (in *MicroserviceSpec) DeepCopyInto(out *MicroserviceSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.IngressAnnotations != nil {
-		in, out := &in.IngressAnnotations, &out.IngressAnnotations
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
-	}
 	if in.PodAnnotations != nil {
 		in, out := &in.PodAnnotations, &out.PodAnnotations
 		*out = make(map[string]string, len(*in))

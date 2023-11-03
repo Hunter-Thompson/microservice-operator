@@ -1,34 +1,33 @@
 package microservice
 
 import (
+	"fmt"
+
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
 	networking "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func GenerateIngressV1(deployment *microservicev1beta1.Microservice) *networking.Ingress {
-	ingress := newNetworkingV1Ingress(deployment, deployment.Name)
-	return configureIngress(deployment, deployment.Spec.Ingress, ingress)
+func GenerateIngressesV1(deployment *microservicev1beta1.Microservice) []*networking.Ingress {
+	ingresses := []*networking.Ingress{}
+	for _, ing := range deployment.Spec.Ingress {
+		ingName := fmt.Sprintf("%s-%s", deployment.GetName(), ing.Name)
+		ingresses = append(ingresses, configureIngressRules(deployment, &ing, newNetworkingV1Ingress(deployment, ingName, ing.Annotations)))
+	}
+
+	return ingresses
 }
 
-func newNetworkingV1Ingress(deployment *microservicev1beta1.Microservice, name string) *networking.Ingress {
+func newNetworkingV1Ingress(deployment *microservicev1beta1.Microservice, name string, annotations map[string]string) *networking.Ingress {
 	return &networking.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       deployment.Namespace,
 			OwnerReferences: DeploymentOwnerReference(deployment),
 			Labels:          deployment.Spec.Labels,
-			Annotations:     deployment.Spec.IngressAnnotations,
+			Annotations:     annotations,
 		},
 	}
-}
-
-func configureIngress(deployment *microservicev1beta1.Microservice, ing []microservicev1beta1.Ingress, ingress *networking.Ingress) *networking.Ingress {
-	for _, v := range ing {
-		configureIngressRules(deployment, &v, ingress)
-	}
-
-	return ingress
 }
 
 func configureIngressRules(deployment *microservicev1beta1.Microservice, ing *microservicev1beta1.Ingress, ingress *networking.Ingress) *networking.Ingress {
@@ -41,7 +40,7 @@ func configureIngressRules(deployment *microservicev1beta1.Microservice, ing *mi
 			PathType: &pathType,
 			Backend: networking.IngressBackend{
 				Service: &networking.IngressServiceBackend{
-					Name: deployment.Name,
+					Name: ing.Name,
 					Port: networking.ServiceBackendPort{
 						Number: ing.ContainerPort,
 					},
@@ -55,7 +54,7 @@ func configureIngressRules(deployment *microservicev1beta1.Microservice, ing *mi
 			PathType: &pathType,
 			Backend: networking.IngressBackend{
 				Service: &networking.IngressServiceBackend{
-					Name: deployment.Name,
+					Name: ing.Name,
 					Port: networking.ServiceBackendPort{
 						Number: ing.ContainerPort,
 					},
@@ -64,14 +63,24 @@ func configureIngressRules(deployment *microservicev1beta1.Microservice, ing *mi
 		})
 	}
 
-	ingress.Spec.Rules = append(ingress.Spec.Rules, networking.IngressRule{
-		Host: ing.Host,
-		IngressRuleValue: networking.IngressRuleValue{
-			HTTP: &networking.HTTPIngressRuleValue{
-				Paths: paths,
+	if ing.Host == "" {
+		ingress.Spec.Rules = append(ingress.Spec.Rules, networking.IngressRule{
+			IngressRuleValue: networking.IngressRuleValue{
+				HTTP: &networking.HTTPIngressRuleValue{
+					Paths: paths,
+				},
 			},
-		},
-	})
+		})
+	} else {
+		ingress.Spec.Rules = append(ingress.Spec.Rules, networking.IngressRule{
+			Host: ing.Host,
+			IngressRuleValue: networking.IngressRuleValue{
+				HTTP: &networking.HTTPIngressRuleValue{
+					Paths: paths,
+				},
+			},
+		})
+	}
 
 	return ingress
 }

@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -95,7 +94,6 @@ func (r *MicroserviceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	err = r.checkService(deployment, status, reqLogger)
 	if err != nil {
-		os.Exit(1)
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}

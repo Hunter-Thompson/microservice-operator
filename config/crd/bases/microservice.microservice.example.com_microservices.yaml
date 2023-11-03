@@ -52,25 +52,20 @@ spec:
                       type: integer
                     host:
                       type: string
-                    internetFacing:
-                      type: boolean
                     name:
                       type: string
                     paths:
                       items:
                         type: string
                       type: array
-                    type:
-                      type: string
                   required:
                   - containerPort
                   - name
+                  - paths
                   type: object
                 type: array
-              ingressAnnotations:
-                additionalProperties:
-                  type: string
-                type: object
+              ingressEnabled:
+                type: boolean
               labels:
                 additionalProperties:
                   type: string
