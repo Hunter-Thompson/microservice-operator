@@ -1,0 +1,29 @@
+---
+apiVersion: microservice.microservice.example.com/v1beta1
+kind: ScheduledAutoscaler
+metadata:
+  name: scheduledautoscaler-sample
+spec:
+  microserviceName: deployment-sample
+  schedules: 
+  - name: "test-2"
+    cron: "@every 50000s"
+    minReplicas: 3
+    maxReplicas: 3
+---
+apiVersion: microservice.microservice.example.com/v1beta1
+kind: Microservice
+metadata:
+  name: deployment-sample
+spec:
+  replicas: 4
+  labels:
+    asd: asda
+  image: sdjg:latesta
+  autoscaling:
+    scaleTargetRef:
+      apiVersion: apps/v1
+      kind: Deployment
+      name: php-apache
+    minReplicas: 3
+    maxReplicas: 10

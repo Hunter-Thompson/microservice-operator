@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
 	"github.com/Hunter-Thompson/microservice-operator/pkg/microservice"
@@ -14,6 +15,12 @@ import (
 func (r *MicroserviceReconciler) checkAutoscaling(mic *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
 	if mic.Spec.Autoscaling == nil {
 		return r.Resources.DeleteHPA(types.NamespacedName{Name: mic.GetName(), Namespace: mic.GetNamespace()}, reqLogger)
+	}
+
+	if mic.Annotations["scheduledautoscaler.override"] == "true" {
+		l := fmt.Sprintf("scheduledautoscaler override found, skipping checkAutoscaling for %s", mic.GetName())
+		reqLogger.Info(l)
+		return nil
 	}
 
 	desired := microservice.GenerateAutoscalingv2(mic)

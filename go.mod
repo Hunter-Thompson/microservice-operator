@@ -1,11 +1,12 @@
 module github.com/Hunter-Thompson/microservice-operator
 
-go 1.18
+go 1.19
 
 require (
 	github.com/banzaicloud/k8s-objectmatcher v1.7.0
 	github.com/go-logr/logr v1.2.4
 	github.com/pkg/errors v0.9.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.8.2
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2

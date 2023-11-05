@@ -22,6 +22,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	cron "github.com/robfig/cron/v3"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -91,6 +92,14 @@ func main() {
 
 	if err = controllers.NewMicroserviceReconciler(mgr).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Microservice")
+		os.Exit(1)
+	}
+
+	allcron := cron.New()
+	allcron.Start()
+
+	if err = controllers.NewScheduledAutoscalerReconciler(mgr, allcron).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ScheduledAutoscaler")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
