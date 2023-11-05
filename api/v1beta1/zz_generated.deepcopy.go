@@ -22,6 +22,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/api/autoscaling/v2"
 	"k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -150,6 +151,16 @@ func (in *MicroserviceSpec) DeepCopyInto(out *MicroserviceSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.LivenessProbe != nil {
+		in, out := &in.LivenessProbe, &out.LivenessProbe
+		*out = new(v1.Probe)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.ReadinessProbe != nil {
+		in, out := &in.ReadinessProbe, &out.ReadinessProbe
+		*out = new(v1.Probe)
+		(*in).DeepCopyInto(*out)
+	}
 	in.Resources.DeepCopyInto(&out.Resources)
 	if in.Labels != nil {
 		in, out := &in.Labels, &out.Labels
@@ -157,6 +168,11 @@ func (in *MicroserviceSpec) DeepCopyInto(out *MicroserviceSpec) {
 		for key, val := range *in {
 			(*out)[key] = val
 		}
+	}
+	if in.Autoscaling != nil {
+		in, out := &in.Autoscaling, &out.Autoscaling
+		*out = new(v2.HorizontalPodAutoscalerSpec)
+		(*in).DeepCopyInto(*out)
 	}
 }
 

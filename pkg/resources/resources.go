@@ -5,6 +5,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/pkg/errors"
@@ -117,6 +118,19 @@ func (r *ResourceHelper) CreateServiceIfNotExists(owner v1.Object, service *core
 		return r.Create(owner, service, reqLogger)
 	} else if err != nil {
 		return errors.Wrap(err, "failed to check if service exists")
+	}
+
+	return nil
+}
+
+func (r *ResourceHelper) CreateHPAIfNotExists(owner v1.Object, hpa *autoscalingv2.HorizontalPodAutoscaler, reqLogger logr.Logger) error {
+	foundHPA := &autoscalingv2.HorizontalPodAutoscaler{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: hpa.Name, Namespace: hpa.Namespace}, foundHPA)
+	if err != nil && k8sErrors.IsNotFound(err) {
+		reqLogger.Info("Creating HPA", "name", hpa.Name)
+		return r.Create(owner, hpa, reqLogger)
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if HPA exists")
 	}
 
 	return nil
@@ -236,6 +250,23 @@ func (r *ResourceHelper) DeleteService(key types.NamespacedName, reqLogger logr.
 	err = r.client.Delete(context.TODO(), foundService)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete service")
+	}
+	return nil
+}
+
+func (r *ResourceHelper) DeleteHPA(key types.NamespacedName, reqLogger logr.Logger) error {
+	foundHPA := &autoscalingv2.HorizontalPodAutoscaler{}
+	err := r.client.Get(context.TODO(), key, foundHPA)
+	if err != nil && k8sErrors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if HPA exists")
+	}
+
+	reqLogger.Info("Deleting HPA", "name", foundHPA.Name)
+	err = r.client.Delete(context.TODO(), foundHPA)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete HPA")
 	}
 	return nil
 }
