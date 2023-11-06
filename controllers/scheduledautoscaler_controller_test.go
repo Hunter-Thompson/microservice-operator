@@ -131,5 +131,14 @@ func TestScheduledAutoscaler(t *testing.T) {
 		assert.Equal(t, map[string]string{
 			"scheduledautoscaler.override": "true",
 		}, ms.Annotations)
+
+		err = r.Client.Delete(context.TODO(), sa)
+		assert.NoError(t, err)
+
+		req = reconcile.Request{NamespacedName: types.NamespacedName{Name: saName, Namespace: saNamespace}}
+		_, err = r.Reconcile(context.TODO(), req)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 0, len(r.allcron.Entries()))
 	})
 }
