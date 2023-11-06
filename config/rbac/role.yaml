@@ -31,3 +31,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - microservice.microservice.example.com
+  resources:
+  - scheduledautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - microservice.microservice.example.com
+  resources:
+  - scheduledautoscalers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - microservice.microservice.example.com
+  resources:
+  - scheduledautoscalers/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -45,3 +45,65 @@ func (r *MicroserviceReconciler) updateStatusReconcilingAndLogError(deployment *
 		reqLogger.Error(err, "Failed to set reconciling")
 	}
 }
+
+//---
+
+// updateStatusReconciling sets the Mattermost state to reconciling.
+func (r *ScheduledAutoscalerReconciler) updateStatusReconciling(sa *microservicev1beta1.ScheduledAutoscaler, status microservicev1beta1.ScheduledAutoscalerStatus, reqLogger logr.Logger) error {
+	status.State = microservicev1beta1.Reconciling
+	return r.updateStatus(sa, status, reqLogger)
+}
+
+func (r *ScheduledAutoscalerReconciler) updateStatus(sa *microservicev1beta1.ScheduledAutoscaler, status microservicev1beta1.ScheduledAutoscalerStatus, reqLogger logr.Logger) error {
+	if reflect.DeepEqual(sa.Status, status) {
+		return nil
+	}
+
+	if sa.Status.State != status.State {
+		reqLogger.Info(fmt.Sprintf("Updating ScheduledAutoscaler state from '%s' to '%s'", sa.Status.State, status.State))
+	}
+
+	sa.Status = status
+	err := r.Client.Status().Update(context.TODO(), sa)
+	if err != nil {
+		return errors.Wrap(err, "failed to update the ScheduledAutoscaler status")
+	}
+
+	return nil
+}
+
+func (r *ScheduledAutoscalerReconciler) updateStatusReconcilingAndLogError(sa *microservicev1beta1.ScheduledAutoscaler, status microservicev1beta1.ScheduledAutoscalerStatus, reqLogger logr.Logger, statusErr error) {
+	if statusErr != nil {
+		status.Error = statusErr.Error()
+	}
+
+	err := r.updateStatusReconciling(sa, status, reqLogger)
+	if err != nil {
+		reqLogger.Error(err, "Failed to set reconciling")
+	}
+}
+
+func removeSchedule(slice []microservicev1beta1.Schedule, s int) []microservicev1beta1.Schedule {
+	return append(slice[:s], slice[s+1:]...)
+}
+
+func containsSchedule(slice []microservicev1beta1.Schedule, str string) (int, bool) {
+	for k, v := range slice {
+		if v.Name == str {
+			return k, true
+		}
+	}
+
+	return 0, false
+}
+
+// updateStatusReconciling sets the Mattermost state to reconciling.
+func (r *ScheduledAutoscalerReconciler) updateStatusWithCronID(sa *microservicev1beta1.ScheduledAutoscaler, status microservicev1beta1.ScheduledAutoscalerStatus, reqLogger logr.Logger) error {
+	sa.Status = status
+
+	err := r.Client.Status().Update(context.TODO(), sa)
+	if err != nil {
+		return errors.Wrap(err, "failed to update the ScheduledAutoscaler status")
+	}
+	return nil
+}

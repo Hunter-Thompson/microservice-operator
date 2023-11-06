@@ -1,0 +1,24 @@
+# permissions for end users to edit scheduledautoscalers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: scheduledautoscaler-editor-role
+rules:
+- apiGroups:
+  - microservice.microservice.example.com
+  resources:
+  - scheduledautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - microservice.microservice.example.com
+  resources:
+  - scheduledautoscalers/status
+  verbs:
+  - get

@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
+
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -41,12 +43,18 @@ type MicroserviceSpec struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
-	Replicas    int32               `json:"replicas"`
+	// +optional
+	LivenessProbe *corev1.Probe `json:"livenessProbe,omitempty"`
+	// +optional
+	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
+	Replicas       int32         `json:"replicas"`
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	Labels    map[string]string           `json:"labels"`
 	// +optional
 	IngressEnabled bool `json:"ingressEnabled,omitempty"`
+	// +optional
+	Autoscaling *autoscalingv2.HorizontalPodAutoscalerSpec `json:"autoscaling,omitempty"`
 }
 
 type Ingress struct {

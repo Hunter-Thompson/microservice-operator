@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,8 +31,6 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 )
-
-const resourcesReadyDelay = 10 * time.Second
 
 // MicroserviceReconciler reconciles a Microservice object
 type MicroserviceReconciler struct {
@@ -87,6 +84,12 @@ func (r *MicroserviceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	err = r.checkDeployment(deployment, status, reqLogger)
+	if err != nil {
+		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
+		return reconcile.Result{}, err
+	}
+
+	err = r.checkAutoscaling(deployment, status, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err

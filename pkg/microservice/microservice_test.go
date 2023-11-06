@@ -5,6 +5,7 @@ import (
 
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
 	"github.com/stretchr/testify/assert"
+	v2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1"
@@ -56,6 +57,16 @@ func TestGenerate(t *testing.T) {
 			Namespace: msNamespace,
 			UID:       types.UID("test"),
 		},
+	}
+
+	autoscaling := v2.HorizontalPodAutoscalerSpec{
+		ScaleTargetRef: v2.CrossVersionObjectReference{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+			Name:       "foo",
+		},
+		MinReplicas: &replicas,
+		MaxReplicas: replicas,
 	}
 
 	ms.Spec = microservicev1beta1.MicroserviceSpec{
@@ -274,5 +285,17 @@ func TestGenerate(t *testing.T) {
 			MatchLabels: labels,
 		}, deployment.Spec.Selector)
 		assert.Equal(t, &replicas, deployment.Spec.Replicas)
+	})
+
+	t.Run("autoscaling", func(t *testing.T) {
+		ms.Spec.Autoscaling = &autoscaling
+		as := GenerateAutoscalingv2(ms)
+		assert.NotNil(t, as)
+		assert.Equal(t, replicas, as.Spec.MaxReplicas)
+		assert.Equal(t, replicas, *as.Spec.MinReplicas)
+
+		ms.Spec.Autoscaling = nil
+		as2 := GenerateAutoscalingv2(ms)
+		assert.Nil(t, as2)
 	})
 }
