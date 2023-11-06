@@ -97,6 +97,20 @@ func (r *ResourceHelper) CreateServiceAccountIfNotExists(owner v1.Object, servic
 	return nil
 }
 
+func (r *ResourceHelper) CreateSecretIfNotExists(owner v1.Object, secret *corev1.Secret, reqLogger logr.Logger) error {
+	foundSecret := &corev1.Secret{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, foundSecret)
+	if err != nil && k8sErrors.IsNotFound(err) {
+		reqLogger.Info("Creating secret", "name", secret.Name)
+		return r.Create(owner, secret, reqLogger)
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if secret exists")
+	}
+
+	return nil
+}
+
 func (r *ResourceHelper) CreateRoleBindingIfNotExists(owner v1.Object, roleBinding *rbacv1.RoleBinding, reqLogger logr.Logger) error {
 	foundRoleBinding := &rbacv1.RoleBinding{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: roleBinding.Name, Namespace: roleBinding.Namespace}, foundRoleBinding)
@@ -267,6 +281,40 @@ func (r *ResourceHelper) DeleteHPA(key types.NamespacedName, reqLogger logr.Logg
 	err = r.client.Delete(context.TODO(), foundHPA)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete HPA")
+	}
+	return nil
+}
+
+func (r *ResourceHelper) DeleteSecret(key types.NamespacedName, reqLogger logr.Logger) error {
+	foundSecret := &corev1.Secret{}
+	err := r.client.Get(context.TODO(), key, foundSecret)
+	if err != nil && k8sErrors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if secret exists")
+	}
+
+	reqLogger.Info("Deleting secret", "name", foundSecret.Name)
+	err = r.client.Delete(context.TODO(), foundSecret)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete secret")
+	}
+	return nil
+}
+
+func (r *ResourceHelper) DeleteServiceAccount(key types.NamespacedName, reqLogger logr.Logger) error {
+	foundSA := &corev1.ServiceAccount{}
+	err := r.client.Get(context.TODO(), key, foundSA)
+	if err != nil && k8sErrors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "failed to check if SA exists")
+	}
+
+	reqLogger.Info("Deleting SA", "name", foundSA.Name)
+	err = r.client.Delete(context.TODO(), foundSA)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete sa")
 	}
 	return nil
 }

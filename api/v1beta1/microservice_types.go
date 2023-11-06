@@ -55,6 +55,8 @@ type MicroserviceSpec struct {
 	IngressEnabled bool `json:"ingressEnabled,omitempty"`
 	// +optional
 	Autoscaling *autoscalingv2.HorizontalPodAutoscalerSpec `json:"autoscaling,omitempty"`
+	// +optional
+	DisableServiceAccountCreation bool `json:"disableServiceAccountCreation,omitempty"`
 }
 
 type Ingress struct {

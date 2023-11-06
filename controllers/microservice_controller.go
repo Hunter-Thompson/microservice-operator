@@ -83,6 +83,18 @@ func (r *MicroserviceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
+	err = r.checkServiceAccount(deployment, status, reqLogger)
+	if err != nil {
+		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
+		return reconcile.Result{}, err
+	}
+
+	err = r.checkServiceAccountSecret(deployment, status, reqLogger)
+	if err != nil {
+		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
+		return reconcile.Result{}, err
+	}
+
 	err = r.checkDeployment(deployment, status, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
