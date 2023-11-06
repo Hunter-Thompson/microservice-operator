@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -590,4 +591,49 @@ func TestMicroserviceController(t *testing.T) {
 	as := &v2.HorizontalPodAutoscaler{}
 	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, as)
 	assert.NoError(t, err)
+
+	sa := &corev1.ServiceAccount{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, sa)
+	assert.NoError(t, err)
+
+	secret := &corev1.Secret{}
+	secretName := fmt.Sprintf("%s-sa", msName)
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: msNamespace}, secret)
+	assert.NoError(t, err)
+
+	err = r.Client.Delete(context.TODO(), ms)
+	assert.NoError(t, err)
+
+	ms = &microservicev1beta1.Microservice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      msName,
+			Namespace: msNamespace,
+			UID:       types.UID("test"),
+		},
+		Spec: microservicev1beta1.MicroserviceSpec{
+			Image:                         image,
+			Labels:                        labels,
+			Replicas:                      replicas,
+			DisableServiceAccountCreation: true,
+		},
+	}
+	err = r.Client.Create(context.TODO(), ms)
+	assert.NoError(t, err)
+
+	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: msName, Namespace: msNamespace}}
+
+	result, err = r.Reconcile(context.TODO(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, ctrl.Result{}, result)
+
+	sa = &corev1.ServiceAccount{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, sa)
+	assert.Error(t, err)
+	assert.True(t, k8sErrors.IsNotFound(err))
+
+	secret = &corev1.Secret{}
+	secretName = fmt.Sprintf("%s-sa", msName)
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: msNamespace}, secret)
+	assert.Error(t, err)
+	assert.True(t, k8sErrors.IsNotFound(err))
 }

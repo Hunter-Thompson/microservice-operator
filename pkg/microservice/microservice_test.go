@@ -1,6 +1,7 @@
 package microservice
 
 import (
+	"fmt"
 	"testing"
 
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
@@ -297,5 +298,17 @@ func TestGenerate(t *testing.T) {
 		ms.Spec.Autoscaling = nil
 		as2 := GenerateAutoscalingv2(ms)
 		assert.Nil(t, as2)
+	})
+
+	t.Run("service account", func(t *testing.T) {
+		sa := GenerateServiceAccount(ms)
+		assert.NotNil(t, sa)
+		assert.Equal(t, ms.Name, sa.Name)
+
+		saSecret := GenerateServiceAccountSecret(ms)
+		assert.NotNil(t, sa)
+		assert.Equal(t, corev1.SecretTypeServiceAccountToken, saSecret.Type)
+		secretName := fmt.Sprintf("%s-sa", ms.Name)
+		assert.Equal(t, secretName, saSecret.Name)
 	})
 }
