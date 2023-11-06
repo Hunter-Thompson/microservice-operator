@@ -39,6 +39,9 @@ func (r *ScheduledAutoscalerReconciler) scale(sa *microservicev1beta1.ScheduledA
 			return
 		}
 
+		if mic.ObjectMeta.Annotations == nil {
+			mic.ObjectMeta.Annotations = make(map[string]string)
+		}
 		mic.ObjectMeta.Annotations["scheduledautoscaler.override"] = "true"
 		err = r.Client.Update(context.TODO(), mic)
 		if err != nil {

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	appsv1 "k8s.io/api/apps/v1"
+	v2 "k8s.io/api/autoscaling/v2"
 	networking "k8s.io/api/networking/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +41,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -98,6 +102,8 @@ func setupTestDeps(t *testing.T) (logr.Logger, *MicroserviceReconciler) {
 	}
 
 	logger := log.FromContext(context.TODO())
+
+	logf.SetLogger(zap.New(zap.WriteTo(os.Stdout), zap.UseDevMode(true)))
 
 	return logger, &r
 }
@@ -538,6 +544,15 @@ func TestMicroserviceController(t *testing.T) {
 			Tolerations:    tolerations,
 			IngressEnabled: true,
 			PodAnnotations: podAnnotations,
+			Autoscaling: &v2.HorizontalPodAutoscalerSpec{
+				ScaleTargetRef: v2.CrossVersionObjectReference{
+					APIVersion: "apps/v1",
+					Kind:       "Deployment",
+					Name:       "foo",
+				},
+				MinReplicas: &replicas,
+				MaxReplicas: replicas,
+			},
 			Ingress: []microservicev1beta1.Ingress{
 				{
 					Host:          "example.com",
@@ -570,5 +585,9 @@ func TestMicroserviceController(t *testing.T) {
 
 	deployment := &appsv1.Deployment{}
 	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, deployment)
+	assert.NoError(t, err)
+
+	as := &v2.HorizontalPodAutoscaler{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, as)
 	assert.NoError(t, err)
 }
