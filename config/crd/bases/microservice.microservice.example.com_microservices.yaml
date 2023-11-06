@@ -690,6 +690,8 @@ spec:
                 - maxReplicas
                 - scaleTargetRef
                 type: object
+              disableServiceAccountCreation:
+                type: boolean
               env:
                 additionalProperties:
                   type: string

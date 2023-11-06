@@ -66,8 +66,9 @@ func configureDeployment(micdeployment *microservicev1beta1.Microservice, deploy
 				Annotations: micdeployment.Spec.PodAnnotations,
 			},
 			Spec: v1.PodSpec{
-				Tolerations:  micdeployment.Spec.Tolerations,
-				NodeSelector: micdeployment.Spec.NodeSelector,
+				ServiceAccountName: micdeployment.Name,
+				Tolerations:        micdeployment.Spec.Tolerations,
+				NodeSelector:       micdeployment.Spec.NodeSelector,
 				Containers: []v1.Container{
 					{
 						Name:      micdeployment.Name,
