@@ -24,20 +24,7 @@ func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Mi
 		return err
 	}
 
-	if len(deployment.Spec.Ingress) < 1 {
-		for _, ing := range ingresses.Items {
-			if strings.Contains(ing.GetName(), deployment.GetName()) {
-				err := r.Resources.DeleteIngress(types.NamespacedName{Name: ing.GetName(), Namespace: ing.GetNamespace()}, reqLogger)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
-	}
-
-	if !deployment.Spec.IngressEnabled {
+	if len(deployment.Spec.Ingress) == 0 || !deployment.Spec.IngressEnabled {
 		for _, ing := range ingresses.Items {
 			if strings.Contains(ing.GetName(), deployment.GetName()) {
 				err := r.Resources.DeleteIngress(types.NamespacedName{Name: ing.GetName(), Namespace: ing.GetNamespace()}, reqLogger)
