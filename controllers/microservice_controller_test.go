@@ -257,7 +257,7 @@ func TestAllChecks(t *testing.T) {
 			{
 				ContainerPort: 8090,
 				Name:          "test-2",
-				Hosts:         []string{"example.com"},
+				Hosts:         []string{"example.com", "example2.com"},
 			},
 		}
 		err = r.checkIngress(ms, currentStatus, logger)
@@ -269,6 +269,26 @@ func TestAllChecks(t *testing.T) {
 		assert.EqualValues(t, []networking.IngressRule{
 			{
 				Host: "example.com",
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: []networking.HTTPIngressPath{
+							{
+								PathType: &pathType,
+								Backend: networking.IngressBackend{
+									Service: &networking.IngressServiceBackend{
+										Name: "test-2",
+										Port: networking.ServiceBackendPort{
+											Number: int32(8090),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Host: "example2.com",
 				IngressRuleValue: networking.IngressRuleValue{
 					HTTP: &networking.HTTPIngressRuleValue{
 						Paths: []networking.HTTPIngressPath{
