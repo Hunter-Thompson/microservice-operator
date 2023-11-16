@@ -63,7 +63,7 @@ func configureIngressRules(deployment *microservicev1beta1.Microservice, ing *mi
 		})
 	}
 
-	if ing.Host == "" {
+	if len(ing.Hosts) == 0 {
 		ingress.Spec.Rules = append(ingress.Spec.Rules, networking.IngressRule{
 			IngressRuleValue: networking.IngressRuleValue{
 				HTTP: &networking.HTTPIngressRuleValue{
@@ -72,14 +72,16 @@ func configureIngressRules(deployment *microservicev1beta1.Microservice, ing *mi
 			},
 		})
 	} else {
-		ingress.Spec.Rules = append(ingress.Spec.Rules, networking.IngressRule{
-			Host: ing.Host,
-			IngressRuleValue: networking.IngressRuleValue{
-				HTTP: &networking.HTTPIngressRuleValue{
-					Paths: paths,
+		for _, host := range ing.Hosts {
+			ingress.Spec.Rules = append(ingress.Spec.Rules, networking.IngressRule{
+				Host: host,
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: paths,
+					},
 				},
-			},
-		})
+			})
+		}
 	}
 
 	return ingress

@@ -204,7 +204,7 @@ func TestAllChecks(t *testing.T) {
 			{
 				ContainerPort: 8090,
 				Name:          "test-2",
-				Host:          "example.com",
+				Hosts:         []string{"example.com"},
 			},
 		}
 		err = r.checkIngress(ms, currentStatus, logger)
@@ -257,7 +257,7 @@ func TestAllChecks(t *testing.T) {
 			{
 				ContainerPort: 8090,
 				Name:          "test-2",
-				Host:          "example.com",
+				Hosts:         []string{"example.com"},
 			},
 		}
 		err = r.checkIngress(ms, currentStatus, logger)
@@ -293,7 +293,7 @@ func TestAllChecks(t *testing.T) {
 			{
 				ContainerPort: 8090,
 				Name:          "test-2",
-				Host:          "example.com",
+				Hosts:         []string{"example.com"},
 				Paths: []string{
 					"/asd",
 					"/dsa",
@@ -359,7 +359,7 @@ func TestAllChecks(t *testing.T) {
 			{
 				ContainerPort: 8090,
 				Name:          "test-2",
-				Host:          "example.com",
+				Hosts:         []string{"example.com"},
 				Paths: []string{
 					"/asd",
 					"/dsa",
@@ -556,7 +556,7 @@ func TestMicroserviceController(t *testing.T) {
 			},
 			Ingress: []microservicev1beta1.Ingress{
 				{
-					Host:          "example.com",
+					Hosts:         []string{"example.com"},
 					Name:          "test-1",
 					ContainerPort: 8090,
 					Paths: []string{

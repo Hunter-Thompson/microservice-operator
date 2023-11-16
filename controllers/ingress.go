@@ -16,15 +16,15 @@ import (
 )
 
 func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
-	if len(deployment.Spec.Ingress) < 1 {
-		ingresses := networking.IngressList{}
-		err := r.Client.List(context.TODO(), &ingresses, &client.ListOptions{
-			Namespace: deployment.GetNamespace(),
-		})
-		if err != nil {
-			return err
-		}
+	ingresses := networking.IngressList{}
+	err := r.Client.List(context.TODO(), &ingresses, &client.ListOptions{
+		Namespace: deployment.GetNamespace(),
+	})
+	if err != nil {
+		return err
+	}
 
+	if len(deployment.Spec.Ingress) < 1 {
 		for _, ing := range ingresses.Items {
 			if strings.Contains(ing.GetName(), deployment.GetName()) {
 				err := r.Resources.DeleteIngress(types.NamespacedName{Name: ing.GetName(), Namespace: ing.GetNamespace()}, reqLogger)
@@ -38,14 +38,6 @@ func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Mi
 	}
 
 	if !deployment.Spec.IngressEnabled {
-		ingresses := networking.IngressList{}
-		err := r.Client.List(context.TODO(), &ingresses, &client.ListOptions{
-			Namespace: deployment.GetNamespace(),
-		})
-		if err != nil {
-			return err
-		}
-
 		for _, ing := range ingresses.Items {
 			if strings.Contains(ing.GetName(), deployment.GetName()) {
 				err := r.Resources.DeleteIngress(types.NamespacedName{Name: ing.GetName(), Namespace: ing.GetNamespace()}, reqLogger)
