@@ -82,13 +82,13 @@ func TestGenerate(t *testing.T) {
 			{
 				ContainerPort: int32(svcPort1),
 				Name:          svcName1,
-				Host:          ingHost1,
+				Hosts:         []string{ingHost1},
 				Paths:         []string{path1, anotherPath1},
 			},
 			{
 				ContainerPort: int32(svcPort2),
 				Name:          svcName2,
-				Host:          ingHost2,
+				Hosts:         []string{ingHost2},
 				Paths:         []string{path2},
 			},
 		},

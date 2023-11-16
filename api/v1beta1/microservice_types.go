@@ -61,7 +61,7 @@ type MicroserviceSpec struct {
 
 type Ingress struct {
 	// +optional
-	Host string `json:"host,omitempty"`
+	Hosts []string `json:"host,omitempty"`
 	// +optional
 	Annotations   map[string]string `json:"annotations,omitempty"`
 	Paths         []string          `json:"paths"`

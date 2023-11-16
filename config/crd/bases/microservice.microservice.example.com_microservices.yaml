@@ -709,7 +709,9 @@ spec:
                       format: int32
                       type: integer
                     host:
-                      type: string
+                      items:
+                        type: string
+                      type: array
                     name:
                       type: string
                     paths:
