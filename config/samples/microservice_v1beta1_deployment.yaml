@@ -6,31 +6,29 @@ spec:
   replicas: 3
   labels:
     asd: asda
-  image: sdjg:latesta
-  ingressAnnotations:
-    ing: "anno"
+  image: nginx:latest
   podAnnotations:
     pod: "anno"
   ingress:
     - containerPort: 8090
-      type: HTTPS
-      host: asd.dsa.asd
+      host: 
+      - asd.dsa.asd
       paths:
         - /dsaa
         - /as
         - /fds
       name: test3
     - containerPort: 443
-      type: HTTPS
-      host: fff.flkgklh.eirt
+      host: 
+      - fff.flkgklh.eirt
       paths:
         - /dsagkfd
         - /asopgkdf
         - /fdslkgfgkglkf
       name: test2
     - containerPort: 3945
-      type: HTTPS
-      host: nmmm.mmm.mmm
+      host: 
+      - nmmm.mmm.mmm
       paths:
         - /dsaa
         - /asfds

@@ -37,8 +37,9 @@ type MicroserviceSpec struct {
 	// +optional
 	PodAnnotations map[string]string `json:"podAnnotations,omitempty"`
 	// +optional
-	Env   map[string]string `json:"env,omitempty"`
-	Image string            `json:"image"`
+	Env map[string]string `json:"env,omitempty"`
+	// +kubebuilder:validation:Required
+	Image string `json:"image"`
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// +optional
@@ -47,10 +48,12 @@ type MicroserviceSpec struct {
 	LivenessProbe *corev1.Probe `json:"livenessProbe,omitempty"`
 	// +optional
 	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
-	Replicas       int32         `json:"replicas"`
+	// +kubebuilder:validation:Required
+	Replicas int32 `json:"replicas"`
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	Labels    map[string]string           `json:"labels"`
+	// +kubebuilder:validation:Required
+	Labels map[string]string `json:"labels"`
 	// +optional
 	IngressEnabled bool `json:"ingressEnabled,omitempty"`
 	// +optional

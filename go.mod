@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/banzaicloud/k8s-objectmatcher v1.7.0
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-logr/logr v1.2.4
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1

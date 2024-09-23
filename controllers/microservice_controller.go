@@ -83,43 +83,44 @@ func (r *MicroserviceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
-	err = r.checkServiceAccount(deployment, status, reqLogger)
+	err = r.checkServiceAccount(deployment, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
 
-	err = r.checkServiceAccountSecret(deployment, status, reqLogger)
+	err = r.checkServiceAccountSecret(deployment, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
 
-	err = r.checkDeployment(deployment, status, reqLogger)
+	err = r.checkDeployment(deployment, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
 
-	err = r.checkAutoscaling(deployment, status, reqLogger)
+	err = r.checkAutoscaling(deployment, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
 
-	err = r.checkService(deployment, status, reqLogger)
+	err = r.checkService(deployment, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
 
-	err = r.checkIngress(deployment, status, reqLogger)
+	err = r.checkIngress(deployment, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)
 		return reconcile.Result{}, err
 	}
 
 	status.State = microservicev1beta1.Stable
+	status.Error = ""
 	err = r.updateStatus(deployment, status, reqLogger)
 	if err != nil {
 		r.updateStatusReconcilingAndLogError(deployment, status, reqLogger, err)

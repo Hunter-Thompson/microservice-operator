@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (r *MicroserviceReconciler) checkAutoscaling(mic *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
+func (r *MicroserviceReconciler) checkAutoscaling(mic *microservicev1beta1.Microservice, reqLogger logr.Logger) error {
 	if mic.Spec.Autoscaling == nil {
 		return r.Resources.DeleteHPA(types.NamespacedName{Name: mic.GetName(), Namespace: mic.GetNamespace()}, reqLogger)
 	}
