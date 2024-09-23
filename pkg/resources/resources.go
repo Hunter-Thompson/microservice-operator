@@ -83,6 +83,24 @@ func (r *ResourceHelper) Update(current, desired Object, reqLogger logr.Logger) 
 	return nil
 }
 
+func (r *ResourceHelper) UpdateWithoutLog(current, desired Object) error {
+	patchResult, err := objectMatcher.NewPatchMaker(defaultAnnotator).Calculate(current, desired)
+	if err != nil {
+		return errors.Wrap(err, "failed to determine if resources differ")
+	}
+	if !patchResult.IsEmpty() {
+		if err := defaultAnnotator.SetLastAppliedAnnotation(desired); err != nil {
+			return errors.Wrap(err, "failed to apply annotation to the resource")
+		}
+		// Resource version is required for the update, but need to be set after
+		// the last applied annotation to avoid unnecessary diffs
+		desired.SetResourceVersion(current.GetResourceVersion())
+		return r.client.Update(context.TODO(), desired)
+	}
+
+	return nil
+}
+
 func (r *ResourceHelper) CreateServiceAccountIfNotExists(owner v1.Object, serviceAccount *corev1.ServiceAccount, reqLogger logr.Logger) error {
 	foundServiceAccount := &corev1.ServiceAccount{}
 

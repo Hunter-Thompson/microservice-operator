@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (r *MicroserviceReconciler) checkDeployment(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
+func (r *MicroserviceReconciler) checkDeployment(deployment *microservicev1beta1.Microservice, reqLogger logr.Logger) error {
 	desired := microservice.GenerateDeployment(deployment)
 
 	err := r.Resources.CreateDeploymentIfNotExists(deployment, desired, reqLogger)

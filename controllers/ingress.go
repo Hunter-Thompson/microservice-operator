@@ -12,10 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
+func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Microservice, reqLogger logr.Logger) error {
 	ingresses := networking.IngressList{}
 	err := r.Client.List(context.TODO(), &ingresses, &client.ListOptions{
 		Namespace: deployment.GetNamespace(),
@@ -60,9 +61,17 @@ func (r *MicroserviceReconciler) checkIngress(deployment *microservicev1beta1.Mi
 	return nil
 }
 
-func (r *MicroserviceReconciler) checkService(deployment *microservicev1beta1.Microservice, status microservicev1beta1.MicroserviceStatus, reqLogger logr.Logger) error {
-	if len(deployment.Spec.Ingress) < 1 {
-		return r.Resources.DeleteService(types.NamespacedName{Name: deployment.GetName(), Namespace: deployment.GetNamespace()}, reqLogger)
+func (r *MicroserviceReconciler) checkService(deployment *microservicev1beta1.Microservice, reqLogger logr.Logger) error {
+	if len(deployment.Spec.Ingress) == 0 {
+		service := &corev1.Service{}
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: deployment.GetName(), Namespace: deployment.GetNamespace()}, service)
+		if err != nil && k8sErrors.IsNotFound(err) {
+			return nil
+		} else if err != nil {
+			return err
+		} else {
+			return r.Resources.DeleteService(types.NamespacedName{Name: deployment.GetName(), Namespace: deployment.GetNamespace()}, reqLogger)
+		}
 	}
 
 	desired := microservice.GenerateServiceV1(deployment)

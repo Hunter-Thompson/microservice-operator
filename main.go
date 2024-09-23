@@ -18,22 +18,26 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	cron "github.com/robfig/cron/v3"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	microservicev1beta1 "github.com/Hunter-Thompson/microservice-operator/api/v1beta1"
 	"github.com/Hunter-Thompson/microservice-operator/controllers"
+	"github.com/Hunter-Thompson/microservice-operator/pkg/env"
+	"github.com/Hunter-Thompson/microservice-operator/pkg/resources"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -50,6 +54,7 @@ func init() {
 }
 
 func main() {
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -90,6 +95,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Route("/env", func(r chi.Router) {
+		env := env.New(
+			mgr.GetClient(),
+			resources.NewResourceHelper(mgr.GetClient(), mgr.GetScheme()),
+		)
+
+		r.Get("/get", env.Get)
+		r.Get("/list", env.List)
+		r.Post("/create", env.Create)
+		r.Post("/delete", env.Delete)
+		r.Post("/edit", env.Edit)
+	})
+
+	go func() {
+		http.ListenAndServe(":3333", r)
+
+	}()
+
 	if err = controllers.NewMicroserviceReconciler(mgr).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Microservice")
 		os.Exit(1)
@@ -118,4 +146,5 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+
 }

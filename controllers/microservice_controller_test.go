@@ -126,11 +126,9 @@ func TestAllChecks(t *testing.T) {
 		},
 	}
 
-	currentStatus := microservicev1beta1.MicroserviceStatus{}
-
 	t.Run("service", func(t *testing.T) {
 		// ---
-		err := r.checkService(ms, currentStatus, logger)
+		err := r.checkService(ms, logger)
 		assert.NoError(t, err)
 
 		current := &corev1.Service{}
@@ -147,7 +145,7 @@ func TestAllChecks(t *testing.T) {
 				},
 			},
 		}
-		err = r.checkService(ms, currentStatus, logger)
+		err = r.checkService(ms, logger)
 		assert.NoError(t, err)
 
 		current = &corev1.Service{}
@@ -167,7 +165,7 @@ func TestAllChecks(t *testing.T) {
 				},
 			},
 		}
-		err = r.checkService(ms, currentStatus, logger)
+		err = r.checkService(ms, logger)
 		assert.NoError(t, err)
 
 		current = &corev1.Service{}
@@ -180,7 +178,7 @@ func TestAllChecks(t *testing.T) {
 
 		// ---
 		ms.Spec.Ingress = []microservicev1beta1.Ingress{}
-		err = r.checkService(ms, currentStatus, logger)
+		err = r.checkService(ms, logger)
 		assert.NoError(t, err)
 
 		current = &corev1.Service{}
@@ -191,7 +189,7 @@ func TestAllChecks(t *testing.T) {
 
 	t.Run("ingress", func(t *testing.T) {
 		// ---
-		err := r.checkIngress(ms, currentStatus, logger)
+		err := r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current := &networking.Ingress{}
@@ -207,7 +205,7 @@ func TestAllChecks(t *testing.T) {
 				Hosts:         []string{"example.com"},
 			},
 		}
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -225,7 +223,7 @@ func TestAllChecks(t *testing.T) {
 				Name:          "test-2",
 			},
 		}
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -260,7 +258,7 @@ func TestAllChecks(t *testing.T) {
 				Hosts:         []string{"example.com", "example2.com"},
 			},
 		}
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -320,7 +318,7 @@ func TestAllChecks(t *testing.T) {
 				},
 			},
 		}
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -365,7 +363,7 @@ func TestAllChecks(t *testing.T) {
 		// ---
 		ms.Spec.IngressEnabled = false
 
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -386,7 +384,7 @@ func TestAllChecks(t *testing.T) {
 				},
 			},
 		}
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -429,7 +427,7 @@ func TestAllChecks(t *testing.T) {
 		}, current.Spec.Rules)
 
 		ms.Spec.Ingress = []microservicev1beta1.Ingress{}
-		err = r.checkIngress(ms, currentStatus, logger)
+		err = r.checkIngress(ms, logger)
 		assert.NoError(t, err)
 
 		current = &networking.Ingress{}
@@ -479,7 +477,7 @@ func TestAllChecks(t *testing.T) {
 			Ingress:        ingress,
 		}
 
-		err := r.checkDeployment(ms, currentStatus, logger)
+		err := r.checkDeployment(ms, logger)
 		assert.NoError(t, err)
 
 		current := &appsv1.Deployment{}
@@ -631,13 +629,35 @@ func TestMicroserviceController(t *testing.T) {
 			UID:       types.UID("test"),
 		},
 		Spec: microservicev1beta1.MicroserviceSpec{
-			Image:                         image,
-			Labels:                        labels,
-			Replicas:                      replicas,
-			DisableServiceAccountCreation: true,
+			Image:    image,
+			Labels:   labels,
+			Replicas: replicas,
 		},
 	}
 	err = r.Client.Create(context.TODO(), ms)
+	assert.NoError(t, err)
+
+	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: msName, Namespace: msNamespace}}
+
+	result, err = r.Reconcile(context.TODO(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, ctrl.Result{}, result)
+
+	sa = &corev1.ServiceAccount{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, sa)
+	assert.NoError(t, err)
+
+	secret = &corev1.Secret{}
+	secretName = fmt.Sprintf("%s-sa", msName)
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: msNamespace}, secret)
+	assert.NoError(t, err)
+
+	current := &microservicev1beta1.Microservice{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: msName, Namespace: msNamespace}, current)
+	assert.NoError(t, err)
+
+	current.Spec.DisableServiceAccountCreation = true
+	err = r.Client.Update(context.TODO(), current)
 	assert.NoError(t, err)
 
 	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: msName, Namespace: msNamespace}}
